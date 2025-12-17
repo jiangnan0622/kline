@@ -202,8 +202,8 @@ const App: React.FC = () => {
                 流年大运走势图 (1-80岁)
               </h3>
               <p className="text-sm text-indigo-dye/70 mb-2 font-serif-sc bg-paper px-4 py-2 rounded-sm inline-block border border-indigo-dye/10">
-                <span className="text-[#FA2C37] font-bold">红色K线</span> 代表运势上涨（吉），
-                <span className="text-[#00CF99] font-bold">绿色K线</span> 代表运势下跌（凶）。
+                <span className="text-red-500 font-bold">红色K线</span> 代表运势上涨（吉），
+                <span className="text-green-600 font-bold">绿色K线</span> 代表运势下跌（凶）。
                 <span className="text-indigo-dye/60 ml-2">(包含 MA5/MA10 均线趋势)</span>
               </p>
               <div className="bg-white/60 p-2 md:p-4 rounded-sm border border-indigo-dye/5 shadow-sm">

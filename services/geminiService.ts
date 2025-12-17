@@ -95,26 +95,27 @@ const generateBatch = async (
   endAge: number,
   birthYear: number,
   daYunDir: string,
-  startDaYun: string,
-  requestId: string
+  startDaYun: string
 ): Promise<KLinePoint[]> => {
   const count = endAge - startAge + 1;
 
-  const prompt = `[请求ID: ${requestId}] 你是八字命理专家。生成 ${startAge}-${endAge} 岁共 ${count} 条K线数据。
+  const prompt = `你是资深八字命理师，精通子平真诠、滴天髓、穷通宝鉴。请根据以下命盘推演 ${startAge}-${endAge} 岁的流年运势。
 
-八字：${input.yearPillar} ${input.monthPillar} ${input.dayPillar} ${input.hourPillar}
-出生：${birthYear}年，起运：${input.startAge}岁，首运：${startDaYun}，${daYunDir}
+【命盘信息】
+四柱八字：${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
+出生年份：公元${birthYear}年
+大运起运：${input.startAge}岁起运，首步大运${startDaYun}，${daYunDir}
 
-只输出JSON：{"chartPoints":[{"age":${startAge},"year":${birthYear + startAge - 1},"daYun":"干支","ganZhi":"干支","open":45,"close":62,"high":70,"low":38,"score":62,"reason":"10字"},...]}
+【推演规则】
+1. 大运每10年一换，流年干支逐年递进
+2. 根据日主强弱、用神喜忌、流年与命局的刑冲克合来判断吉凶
+3. 分数范围：20-90分。大吉(75-90)、小吉(60-74)、平(45-59)、小凶(30-44)、大凶(20-29)
+4. K线形态要体现运势波动：平稳年open/close差<5，转折年open/close差>15
 
-【重要】生成要求：
-- **每次请求必须生成新的、独特的数值**，禁止与之前任何请求相同。
-- **拒绝平均**：不要每年都差不多长！必须有长有短。
-- **平稳年份 (70%)**：open和close非常接近 (差值 < 5)，K线很短。
-- **转折年份 (30%)**：open和close差距极大 (差值 > 15-25)，K线很长。
-- **吉凶分明**：吉年(>70分)要长红，凶年(<40分)要长绿。
+【输出格式】
+严格输出JSON：{"chartPoints":[{"age":${startAge},"year":${birthYear + startAge - 1},"daYun":"当前大运干支","ganZhi":"流年干支","open":起始分,"close":收盘分,"high":最高分,"low":最低分,"score":收盘分,"reason":"命理依据8字内"},...]}
 
-daYun每10年变，ganZhi每年变，reason≤10字，score=close值`;
+共${count}条数据，请专业推演。`;
 
 
 
@@ -146,13 +147,39 @@ export const generateLifeAnalysis = async (input: UserInput): Promise<LifeDestin
   console.log("=== 开始生成人生K线 (并发模式) ===");
   console.log("八字:", input.yearPillar, input.monthPillar, input.dayPillar, input.hourPillar);
 
-  // Generate unique request ID for this session
-  const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  // Define prompts - Professional Bazi Analysis
+  const analysisPrompt = `你是资深八字命理师，精通子平真诠、滴天髓、穷通宝鉴等经典。请对以下命盘进行专业分析。
 
-  // Define prompts
-  const analysisPrompt = `八字：${input.yearPillar} ${input.monthPillar} ${input.dayPillar} ${input.hourPillar}，${input.gender === Gender.MALE ? '男' : '女'} 命
+【命盘】
+四柱：${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
+性别：${input.gender === Gender.MALE ? '乾造（男）' : '坤造（女）'}
 
-  生成JSON：{ "bazi": ["${input.yearPillar}", "${input.monthPillar}", "${input.dayPillar}", "${input.hourPillar}"], "summary": "30字总评", "summaryScore": 7, "industry": "20字事业", "industryScore": 7, "wealth": "20字财运", "wealthScore": 7, "marriage": "20字婚姻", "marriageScore": 7, "health": "20字健康", "healthScore": 7, "family": "20字六亲", "familyScore": 7 } `;
+【分析要求】
+1. 先定日主强弱，再论格局用神
+2. 评分标准（1-10分）：
+   - 9-10分：极上格局，五行流通，用神有力
+   - 7-8分：上格局，略有缺陷但瑕不掩瑜
+   - 5-6分：中格局，吉凶参半
+   - 3-4分：下格局，忌神当令或有刑冲破害
+   - 1-2分：极凶格局，克陷重重
+3. 根据命局实际情况客观评分，不要所有项目都给7分
+
+【输出JSON】
+{
+  "bazi": ["${input.yearPillar}", "${input.monthPillar}", "${input.dayPillar}", "${input.hourPillar}"],
+  "summary": "格局定性与总评（30字内）",
+  "summaryScore": 根据格局高低给1-10分,
+  "industry": "事业方向与适合行业（25字内）",
+  "industryScore": 根据官杀印星状态给1-10分,
+  "wealth": "财运分析（25字内）",
+  "wealthScore": 根据财星喜忌给1-10分,
+  "marriage": "婚姻感情（25字内）",
+  "marriageScore": 根据夫妻宫与配偶星给1-10分,
+  "health": "健康提示（25字内）",
+  "healthScore": 根据五行偏枯给1-10分,
+  "family": "六亲缘分（25字内）",
+  "familyScore": 根据六亲宫位给1-10分
+}`;
 
   // Launch all requests in parallel
   console.log("启动并发请求...");
@@ -164,15 +191,15 @@ export const generateLifeAnalysis = async (input: UserInput): Promise<LifeDestin
         .then(res => { console.log("分析模块完成"); return res; }),
 
       // 2. Batch 1 (1-40)
-      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 1, 40, birthYear, daYunDir, input.firstDaYun, requestId)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 1, 40, birthYear, daYunDir, input.firstDaYun)
         .then(res => { console.log("Batch 1 (1-40) 完成"); return res; }),
 
       // 3. Batch 2 (41-80)
-      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 41, 80, birthYear, daYunDir, input.firstDaYun, requestId)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 41, 80, birthYear, daYunDir, input.firstDaYun)
         .then(res => { console.log("Batch 2 (41-80) 完成"); return res; }),
 
       // 4. Batch 3 (81-120)
-      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 81, 120, birthYear, daYunDir, input.firstDaYun, requestId)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 81, 120, birthYear, daYunDir, input.firstDaYun)
         .then(res => { console.log("Batch 3 (81-120) 完成"); return res; }),
     ]);
 
