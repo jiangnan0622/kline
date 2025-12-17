@@ -19,7 +19,7 @@ const callApi = async (
   const requestBody = {
     model: targetModel,
     messages: [{ role: "user", content: userPrompt }],
-    temperature: 0.6,
+    temperature: 0.85,
     response_format: { type: "json_object" }
   };
 
@@ -95,23 +95,24 @@ const generateBatch = async (
   endAge: number,
   birthYear: number,
   daYunDir: string,
-  startDaYun: string
+  startDaYun: string,
+  requestId: string
 ): Promise<KLinePoint[]> => {
   const count = endAge - startAge + 1;
 
-  const prompt = `你是八字命理专家。生成 ${startAge}-${endAge} 岁共 ${count} 条K线数据。
+  const prompt = `[请求ID: ${requestId}] 你是八字命理专家。生成 ${startAge}-${endAge} 岁共 ${count} 条K线数据。
 
 八字：${input.yearPillar} ${input.monthPillar} ${input.dayPillar} ${input.hourPillar}
 出生：${birthYear}年，起运：${input.startAge}岁，首运：${startDaYun}，${daYunDir}
 
 只输出JSON：{"chartPoints":[{"age":${startAge},"year":${birthYear + startAge - 1},"daYun":"干支","ganZhi":"干支","open":45,"close":62,"high":70,"low":38,"score":62,"reason":"10字"},...]}
 
-【重要】K线形态 - 区分度 (High Contrast)：
+【重要】生成要求：
+- **每次请求必须生成新的、独特的数值**，禁止与之前任何请求相同。
 - **拒绝平均**：不要每年都差不多长！必须有长有短。
-- **平稳年份 (70%)**：open和close非常接近 (差值 < 5)，K线很短，表示运势平稳。
-- **转折年份 (30%)**：open和close差距极大 (差值 > 15-25)，K线很长，表示大起大落。
+- **平稳年份 (70%)**：open和close非常接近 (差值 < 5)，K线很短。
+- **转折年份 (30%)**：open和close差距极大 (差值 > 15-25)，K线很长。
 - **吉凶分明**：吉年(>70分)要长红，凶年(<40分)要长绿。
-- **制造疏密**：平稳期像一条线，动荡期像一根柱，视觉上要有明显的疏密节奏。
 
 daYun每10年变，ganZhi每年变，reason≤10字，score=close值`;
 
@@ -145,6 +146,9 @@ export const generateLifeAnalysis = async (input: UserInput): Promise<LifeDestin
   console.log("=== 开始生成人生K线 (并发模式) ===");
   console.log("八字:", input.yearPillar, input.monthPillar, input.dayPillar, input.hourPillar);
 
+  // Generate unique request ID for this session
+  const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
   // Define prompts
   const analysisPrompt = `八字：${input.yearPillar} ${input.monthPillar} ${input.dayPillar} ${input.hourPillar}，${input.gender === Gender.MALE ? '男' : '女'} 命
 
@@ -160,15 +164,15 @@ export const generateLifeAnalysis = async (input: UserInput): Promise<LifeDestin
         .then(res => { console.log("分析模块完成"); return res; }),
 
       // 2. Batch 1 (1-40)
-      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 1, 40, birthYear, daYunDir, input.firstDaYun)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 1, 40, birthYear, daYunDir, input.firstDaYun, requestId)
         .then(res => { console.log("Batch 1 (1-40) 完成"); return res; }),
 
       // 3. Batch 2 (41-80)
-      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 41, 80, birthYear, daYunDir, input.firstDaYun)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 41, 80, birthYear, daYunDir, input.firstDaYun, requestId)
         .then(res => { console.log("Batch 2 (41-80) 完成"); return res; }),
 
       // 4. Batch 3 (81-120)
-      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 81, 120, birthYear, daYunDir, input.firstDaYun)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 81, 120, birthYear, daYunDir, input.firstDaYun, requestId)
         .then(res => { console.log("Batch 3 (81-120) 完成"); return res; }),
     ]);
 
