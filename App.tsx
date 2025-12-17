@@ -206,7 +206,7 @@ const App: React.FC = () => {
                 <span className="text-green-600 font-bold">绿色K线</span> 代表运势下跌（凶）。
                 <span className="text-indigo-dye/60 ml-2">(包含 MA5/MA10 均线趋势)</span>
               </p>
-              <div className="bg-white/60 p-4 rounded-sm border border-indigo-dye/5 shadow-sm">
+              <div className="bg-white/60 p-2 md:p-4 rounded-sm border border-indigo-dye/5 shadow-sm">
                 <LifeKLineChart data={result.chartData} />
               </div>
             </section>

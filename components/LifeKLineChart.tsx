@@ -34,7 +34,7 @@ const CustomTooltip = ({ active, payload }: any) => {
             {data.year}年 · {data.age}岁
           </span>
           <span className={`px-2 py-1 rounded text-sm font-bold ${isUp ? 'bg-red-600/20 text-red-400' : 'bg-green-600/20 text-green-400'}`}>
-            {isUp ? '▲ 吉' : '▼ 凶'} {changePercent}%
+            {isUp ? '▲ 吉 (上涨)' : '▼ 凶 (下跌)'} {changePercent}%
           </span>
         </div>
 
@@ -181,13 +181,13 @@ const LifeKLineChart: React.FC<LifeKLineChartProps> = ({ data }) => {
   }
 
   return (
-    <div className="w-full bg-[#0d0d1a] p-6 rounded-xl border border-gray-800 shadow-2xl">
+    <div className="w-full bg-[#0d0d1a] p-3 md:p-6 rounded-xl border border-gray-800 shadow-2xl">
       {/* Header matching image style */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h3 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
             流年运势 K 线
-            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs rounded-full border border-indigo-500/30">建禄格</span>
+            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] md:text-xs rounded-full border border-indigo-500/30 whitespace-nowrap">建禄格</span>
           </h3>
           <div className="flex gap-4 mt-2 text-xs text-gray-400">
             <span>格局基准分: <span className="text-white font-mono">72</span></span>
@@ -212,18 +212,18 @@ const LifeKLineChart: React.FC<LifeKLineChartProps> = ({ data }) => {
 
       {/* Legend */}
       <div className="text-xs text-gray-500 mb-2 flex gap-4">
-        <span className="flex items-center gap-1.5 text-green-400">
-          <span className="w-3 h-3 bg-green-500 rounded-sm"></span>
-          <span>绿色K线 代表运势上涨 (吉)</span>
-        </span>
         <span className="flex items-center gap-1.5 text-red-400">
           <span className="w-3 h-3 bg-red-500 rounded-sm"></span>
-          <span>红色K线 代表运势下跌 (凶)</span>
+          <span>红色K线 运势上涨 (吉)</span>
+        </span>
+        <span className="flex items-center gap-1.5 text-green-400">
+          <span className="w-3 h-3 bg-green-500 rounded-sm"></span>
+          <span>绿色K线 运势下跌 (凶)</span>
         </span>
       </div>
 
       {/* K线图主体 */}
-      <div className="h-[500px] w-full relative">
+      <div className="h-[350px] md:h-[500px] w-full relative">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={transformedData} margin={{ top: 20, right: 10, left: 0, bottom: 20 }}>
             <defs>
