@@ -142,55 +142,61 @@ export const generateLifeAnalysis = async (input: UserInput): Promise<LifeDestin
   const isForward = input.gender === Gender.MALE ? yearStemPolarity === 'YANG' : yearStemPolarity === 'YIN';
   const daYunDir = isForward ? '顺行' : '逆行';
 
-  console.log("=== 开始生成人生K线 ===");
+  console.log("=== 开始生成人生K线 (并发模式) ===");
   console.log("八字:", input.yearPillar, input.monthPillar, input.dayPillar, input.hourPillar);
 
-  // Step 1: Get analysis
+  // Define prompts
   const analysisPrompt = `八字：${input.yearPillar} ${input.monthPillar} ${input.dayPillar} ${input.hourPillar}，${input.gender === Gender.MALE ? '男' : '女'} 命
 
   生成JSON：{ "bazi": ["${input.yearPillar}", "${input.monthPillar}", "${input.dayPillar}", "${input.hourPillar}"], "summary": "30字总评", "summaryScore": 7, "industry": "20字事业", "industryScore": 7, "wealth": "20字财运", "wealthScore": 7, "marriage": "20字婚姻", "marriageScore": 7, "health": "20字健康", "healthScore": 7, "family": "20字六亲", "familyScore": 7 } `;
 
-  console.log("Step 1: 获取命理分析...");
-  const analysisContent = await callApi(cleanBaseUrl, apiKey, targetModel, analysisPrompt);
-  const analysisData = parseJson(analysisContent);
-  console.log("Step 1 完成");
+  // Launch all requests in parallel
+  console.log("启动并发请求...");
 
-  // Step 2-4: Generate chart points in 3 batches (1-30, 31-60, 61-80)
-  const allPoints: KLinePoint[] = [];
+  try {
+    const [analysisContent, batch1Points, batch2Points, batch3Points] = await Promise.all([
+      // 1. Analysis
+      callApi(cleanBaseUrl, apiKey, targetModel, analysisPrompt)
+        .then(res => { console.log("分析模块完成"); return res; }),
 
-  console.log("Step 2: 生成 1-40 岁...");
-  const batch1 = await generateBatch(cleanBaseUrl, apiKey, targetModel, input, 1, 40, birthYear, daYunDir, input.firstDaYun);
-  allPoints.push(...batch1);
-  console.log(`Step 2 完成: ${batch1.length} 条`);
+      // 2. Batch 1 (1-40)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 1, 40, birthYear, daYunDir, input.firstDaYun)
+        .then(res => { console.log("Batch 1 (1-40) 完成"); return res; }),
 
-  console.log("Step 3: 生成 41-80 岁...");
-  const batch2 = await generateBatch(cleanBaseUrl, apiKey, targetModel, input, 41, 80, birthYear, daYunDir, input.firstDaYun);
-  allPoints.push(...batch2);
-  console.log(`Step 3 完成: ${batch2.length} 条`);
+      // 3. Batch 2 (41-80)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 41, 80, birthYear, daYunDir, input.firstDaYun)
+        .then(res => { console.log("Batch 2 (41-80) 完成"); return res; }),
 
-  console.log("Step 4: 生成 81-120 岁...");
-  const batch3 = await generateBatch(cleanBaseUrl, apiKey, targetModel, input, 81, 120, birthYear, daYunDir, input.firstDaYun);
-  allPoints.push(...batch3);
-  console.log(`Step 4 完成: ${batch3.length} 条`);
+      // 4. Batch 3 (81-120)
+      generateBatch(cleanBaseUrl, apiKey, targetModel, input, 81, 120, birthYear, daYunDir, input.firstDaYun)
+        .then(res => { console.log("Batch 3 (81-120) 完成"); return res; }),
+    ]);
 
-  console.log(`=== 完成！共 ${allPoints.length} 条数据 === `);
+    const analysisData = parseJson(analysisContent);
+    const allPoints = [...batch1Points, ...batch2Points, ...batch3Points];
 
-  return {
-    chartData: allPoints,
-    analysis: {
-      bazi: (analysisData.bazi as string[]) || [input.yearPillar, input.monthPillar, input.dayPillar, input.hourPillar],
-      summary: String(analysisData.summary || "命理分析完成"),
-      summaryScore: Number(analysisData.summaryScore) || 7,
-      industry: String(analysisData.industry || "事业运正常"),
-      industryScore: Number(analysisData.industryScore) || 7,
-      wealth: String(analysisData.wealth || "财运平稳"),
-      wealthScore: Number(analysisData.wealthScore) || 7,
-      marriage: String(analysisData.marriage || "婚姻顺遂"),
-      marriageScore: Number(analysisData.marriageScore) || 7,
-      health: String(analysisData.health || "健康无虞"),
-      healthScore: Number(analysisData.healthScore) || 7,
-      family: String(analysisData.family || "六亲和睦"),
-      familyScore: Number(analysisData.familyScore) || 7,
-    },
-  };
+    console.log(`=== 全部完成！共 ${allPoints.length} 条数据 === `);
+
+    return {
+      chartData: allPoints,
+      analysis: {
+        bazi: (analysisData.bazi as string[]) || [input.yearPillar, input.monthPillar, input.dayPillar, input.hourPillar],
+        summary: String(analysisData.summary || "命理分析完成"),
+        summaryScore: Number(analysisData.summaryScore) || 7,
+        industry: String(analysisData.industry || "事业运正常"),
+        industryScore: Number(analysisData.industryScore) || 7,
+        wealth: String(analysisData.wealth || "财运平稳"),
+        wealthScore: Number(analysisData.wealthScore) || 7,
+        marriage: String(analysisData.marriage || "婚姻顺遂"),
+        marriageScore: Number(analysisData.marriageScore) || 7,
+        health: String(analysisData.health || "健康无虞"),
+        healthScore: Number(analysisData.healthScore) || 7,
+        family: String(analysisData.family || "六亲和睦"),
+        familyScore: Number(analysisData.familyScore) || 7,
+      },
+    };
+  } catch (error: any) {
+    console.error("生成过程中出现错误:", error);
+    throw error; // Propagate error to UI
+  }
 };
