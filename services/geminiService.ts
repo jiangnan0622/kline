@@ -115,7 +115,14 @@ const generateBatch = async (
 【输出格式】
 严格输出JSON：{"chartPoints":[{"age":${startAge},"year":${birthYear + startAge - 1},"daYun":"当前大运干支","ganZhi":"流年干支","open":起始分,"close":收盘分,"high":最高分,"low":最低分,"score":收盘分,"reason":"命理依据8字内"},...]}
 
-共${count}条数据，请专业推演。`;
+【重要】生成要求：
+- **每次请求必须生成新的、独特的数值**，禁止与之前任何请求相同。
+- **拒绝平均**：不要每年都差不多长！必须有长有短。
+- **平稳年份 (70%)**：open和close非常接近 (差值 < 5)，K线很短。
+- **转折年份 (30%)**：open和close差距极大 (差值 > 15-25)，K线很长。
+- **吉凶分明**：吉年(>70分)要长红，凶年(<40分)要长绿。
+
+daYun每10年变，ganZhi每年变，reason≤10字，score=close值`;
 
 
 
@@ -147,39 +154,42 @@ export const generateLifeAnalysis = async (input: UserInput): Promise<LifeDestin
   console.log("=== 开始生成人生K线 (并发模式) ===");
   console.log("八字:", input.yearPillar, input.monthPillar, input.dayPillar, input.hourPillar);
 
-  // Define prompts - Professional Bazi Analysis
-  const analysisPrompt = `你是资深八字命理师，精通子平真诠、滴天髓、穷通宝鉴等经典。请对以下命盘进行专业分析。
+  // Define prompts - Professional Bazi Analysis with STRICT scoring variation
+  const analysisPrompt = `你是资深八字命理师。请对以下命盘进行专业分析。
 
 【命盘】
 四柱：${input.yearPillar}年 ${input.monthPillar}月 ${input.dayPillar}日 ${input.hourPillar}时
 性别：${input.gender === Gender.MALE ? '乾造（男）' : '坤造（女）'}
 
-【分析要求】
-1. 先定日主强弱，再论格局用神
-2. 评分标准（1-10分）：
-   - 9-10分：极上格局，五行流通，用神有力
-   - 7-8分：上格局，略有缺陷但瑕不掩瑜
-   - 5-6分：中格局，吉凶参半
-   - 3-4分：下格局，忌神当令或有刑冲破害
-   - 1-2分：极凶格局，克陷重重
-3. 根据命局实际情况客观评分，不要所有项目都给7分
+【评分规则 - 必须严格遵守】
+⚠️ 禁止所有分数都给7分！必须根据五行喜忌客观评判。
+⚠️ 六项评分中，至少2项≤5分，至少1项≥8分。
+
+评分依据：
+- 9-10分：该方面用神得力，大吉
+- 7-8分：该方面较好，小吉  
+- 5-6分：该方面平平，吉凶参半
+- 3-4分：该方面欠佳，需注意
+- 1-2分：该方面忌神当令，凶
 
 【输出JSON】
 {
   "bazi": ["${input.yearPillar}", "${input.monthPillar}", "${input.dayPillar}", "${input.hourPillar}"],
-  "summary": "格局定性与总评（30字内）",
-  "summaryScore": 根据格局高低给1-10分,
-  "industry": "事业方向与适合行业（25字内）",
-  "industryScore": 根据官杀印星状态给1-10分,
-  "wealth": "财运分析（25字内）",
-  "wealthScore": 根据财星喜忌给1-10分,
-  "marriage": "婚姻感情（25字内）",
-  "marriageScore": 根据夫妻宫与配偶星给1-10分,
-  "health": "健康提示（25字内）",
-  "healthScore": 根据五行偏枯给1-10分,
-  "family": "六亲缘分（25字内）",
-  "familyScore": 根据六亲宫位给1-10分
-}`;
+  "summary": "格局总评(30字)",
+  "summaryScore": 5,
+  "industry": "事业分析(25字)",
+  "industryScore": 6,
+  "wealth": "财运分析(25字)",
+  "wealthScore": 4,
+  "marriage": "婚姻分析(25字)",
+  "marriageScore": 8,
+  "health": "健康提示(25字)",
+  "healthScore": 5,
+  "family": "六亲分析(25字)",
+  "familyScore": 7
+}
+
+上面的分数只是示例格式，你必须根据命局实际情况给出不同的分数！`;
 
   // Launch all requests in parallel
   console.log("启动并发请求...");

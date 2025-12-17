@@ -42,36 +42,30 @@ const useIsMobile = () => {
 // Custom Components
 // ----------------------------------------------------------------------
 
-// Tooltip matching reference style
-const CustomTooltip = ({ active, payload }: any) => {
+// Tooltip matching reference style - Mobile optimized
+const CustomTooltip = ({ active, payload, isMobile }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as KLinePoint;
     const isUp = data.close >= data.open;
-    const colorClass = isUp ? 'text-red-500' : 'text-green-600';
 
     return (
-      <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-lg min-w-[200px]">
-        <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100">
+      <div className={`bg-white rounded-lg border border-gray-200 shadow-lg ${isMobile ? 'p-2 min-w-[160px] text-xs' : 'p-3 min-w-[200px]'}`}>
+        <div className="flex justify-between items-center mb-1.5 pb-1.5 border-b border-gray-100">
           <span className="text-gray-800 font-bold">
-            {data.year}年 · {data.age}岁
+            {data.age}岁
           </span>
-          <span className={`px-2 py-0.5 rounded text-xs font-bold ${isUp ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-600'}`}>
-            {isUp ? '吉运' : '凶运'}
+          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isUp ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-600'}`}>
+            {isUp ? '吉' : '凶'} {data.close}分
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-sm mb-2">
-          <div><span className="text-gray-500">大运：</span><span className="text-amber-600 font-medium">{data.daYun}</span></div>
-          <div><span className="text-gray-500">流年：</span><span className="text-blue-600 font-medium">{data.ganZhi}</span></div>
-        </div>
-
-        <div className="flex justify-between items-center bg-gray-50 rounded p-2">
-          <span className="text-gray-500 text-sm">运势分</span>
-          <span className={`text-xl font-bold ${colorClass}`}>{data.close}</span>
+        <div className="flex gap-2 text-[10px] mb-1">
+          <span className="text-gray-500">大运:<span className="text-amber-600 font-medium ml-0.5">{data.daYun}</span></span>
+          <span className="text-gray-500">流年:<span className="text-blue-600 font-medium ml-0.5">{data.ganZhi}</span></span>
         </div>
 
         {data.reason && (
-          <div className="text-gray-500 text-xs mt-2 pt-2 border-t border-gray-100">
+          <div className="text-gray-400 text-[10px] truncate">
             {data.reason}
           </div>
         )}
@@ -140,34 +134,33 @@ const LifeKLineChart: React.FC<LifeKLineChartProps> = ({ data }) => {
 
   return (
     <div className="w-full bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      {/* Header - matching reference */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex flex-row justify-between items-center">
-          <h3 className="text-base md:text-lg font-bold text-gray-800">
+      {/* Header - Mobile optimized */}
+      <div className="p-3 md:p-4 border-b border-gray-100">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+          {/* Title */}
+          <h3 className="text-sm md:text-lg font-bold text-gray-800">
             人生流年大运K线图
-            <span className="text-xs text-gray-400 font-normal ml-2">(评分仅和自身比较)</span>
+            <span className="hidden md:inline text-xs text-gray-400 font-normal ml-2">(评分仅和自身比较)</span>
           </h3>
 
-          {/* Legend matching reference exactly - 红涨绿跌 */}
-          <div className="flex gap-4 text-xs">
-            <div className="flex items-center gap-1.5 border border-gray-200 rounded px-2 py-1">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-red-500 font-medium">吉运</span>
-              <span className="text-gray-400">(涨)</span>
+          {/* Legend - Compact on mobile */}
+          <div className="flex gap-3 text-[10px] md:text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-red-500 rounded-sm"></div>
+              <span className="text-red-500 font-medium">吉</span>
             </div>
-            <div className="flex items-center gap-1.5 border border-gray-200 rounded px-2 py-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-green-600 font-medium">凶运</span>
-              <span className="text-gray-400">(跌)</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-sm"></div>
+              <span className="text-green-600 font-medium">凶</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="h-[350px] md:h-[450px] w-full p-2 md:p-4">
+      <div className="h-[300px] md:h-[450px] w-full px-1 py-2 md:p-4">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={transformedData} margin={{ top: 30, right: 10, left: 0, bottom: 20 }}>
+          <ComposedChart data={transformedData} margin={{ top: 25, right: isMobile ? 5 : 10, left: isMobile ? -15 : 0, bottom: 15 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke={COLORS.grid}
@@ -176,26 +169,26 @@ const LifeKLineChart: React.FC<LifeKLineChartProps> = ({ data }) => {
 
             <XAxis
               dataKey="age"
-              tick={{ fontSize: 11, fill: COLORS.text }}
-              interval={isMobile ? 19 : 9}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: COLORS.text }}
+              interval={isMobile ? 29 : 9}
               axisLine={{ stroke: COLORS.grid }}
               tickLine={false}
-              label={{ value: '年龄', position: 'insideBottomRight', offset: -5, fontSize: 11, fill: COLORS.text }}
             />
 
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: 11, fill: COLORS.text }}
+              tick={{ fontSize: isMobile ? 9 : 11, fill: COLORS.text }}
               axisLine={{ stroke: COLORS.grid }}
               tickLine={false}
-              ticks={[0, 25, 50, 75, 100]}
-              label={{ value: '运势分', angle: -90, position: 'insideLeft', fontSize: 11, fill: COLORS.text }}
+              ticks={[0, 50, 100]}
+              width={isMobile ? 20 : 30}
             />
 
             <Tooltip
-              content={<CustomTooltip />}
-              cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+              content={<CustomTooltip isMobile={isMobile} />}
+              cursor={{ fill: 'rgba(0,0,0,0.03)' }}
               isAnimationActive={false}
+              position={isMobile ? { x: 10, y: 5 } : undefined}
             />
 
             {/* K-Line Bars */}
